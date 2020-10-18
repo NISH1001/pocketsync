@@ -2,3 +2,4 @@ dateparser
 loguru
 fire
 rapidfuzz
+newspaper3k
