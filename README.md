@@ -10,6 +10,11 @@ A naive data fetcher for pocket.
 - Create directory `data/`
 
 ## Sync
+
+First, create `secrets.py` file with `consumer_key` and `accesss_token` variable in the parent directory.  
+See [here](https://github.com/karlicoss/pockexport#exporting) for further reference.
+
+
 `sh sync.sh`
 
 ## Dump Annotations
