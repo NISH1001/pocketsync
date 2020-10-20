@@ -19,7 +19,7 @@ sync_data(){
 log_sync(){
     date=$(date '+%Y-%m-%d:%H:%M:%S')
     echo "logging to $1"
-    echo $date > $1
+    echo $date >> $1
 }
 
 if test -f "$DATAFILE"; then

@@ -90,6 +90,8 @@ def dump_annotations(
     path = os.path.join(path, title + ".txt")
     logger.info(f"Dumping annotation to {path}")
     with open(path, "w") as f:
+        f.write(title)
+        f.write("\n")
         if url:
             f.write(url)
             f.write("\n")
