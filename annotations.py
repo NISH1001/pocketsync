@@ -7,6 +7,7 @@ import dateparser
 
 import json
 import os
+import re
 import pathlib
 import sys
 
@@ -53,14 +54,29 @@ def search_by_title(data: dict, title: str, topn: int = 5) -> List[tuple]:
     return res
 
 
+def search_by_url(data: dict, url: str, topn: int = 5) -> List[tuple]:
+    assert url
+    logger.info(f"Searching for url={url}")
+    res = []
+    url = url.lower()
+    for item_id, vals in data["list"].items():
+        dest_url = vals.get("resolved_url", "").lower()
+        if dest_url:
+            score = fuzz.ratio(url, dest_url)
+            res.append((score, item_id, vals))
+    res = sorted(res, key=lambda x: x[0], reverse=True)[:topn]
+    if res and res[0][0] > 95:
+        return res[:1]
+    return res
+
+
 def extract_annotations(data: dict) -> List[str]:
     url = data.get("resolved_url", "given_url")
     final_annotations = []
+    annotations = data.get("annotations", [])
     try:
         fulltext = get_full_text(url)
         fulltext_l = fulltext.lower()
-        annotations = data.get("annotations", [])
-
         logger.info("Sorting annotations by position...")
         annotations_text = map(lambda x: x["quote"], annotations)
         annotations_text = list(filter(lambda x: len(x) > 0, annotations_text))
@@ -84,10 +100,14 @@ def extract_annotations(data: dict) -> List[str]:
 def dump_annotations(
     annotations: List[str], title: str, url=None, path: str = "data/annotations/"
 ):
-    assert title
+    assert title or url
     if not os.path.exists(path):
         os.makedirs(path)
-    path = os.path.join(path, title + ".txt")
+    if url and not title:
+        fname = re.sub(r"(\W+)|(http)|(https)", " ", url).strip()
+    else:
+        fname = title
+    path = os.path.join(path, fname + ".txt")
     logger.info(f"Dumping annotation to {path}")
     with open(path, "w") as f:
         f.write(title)
@@ -102,10 +122,14 @@ def dump_annotations(
 def annotation_dumper(
     datapath=pathlib.Path(__file__).parent.absolute().joinpath("data/sync.json"),
     title="",
+    url="",
 ):
     data = load_data(datapath)
-    assert title
-    matched = search_by_title(data, title)
+    assert title or url
+    if title:
+        matched = search_by_title(data, title)
+    elif url:
+        matched = search_by_url(data, url)
     if matched:
         vals = matched[0][-1]
         annotations = extract_annotations(vals)
@@ -115,7 +139,7 @@ def annotation_dumper(
             url=annotations.get("url", None),
         )
     else:
-        logger.warning(f"No item found for tile={title}")
+        logger.warning(f"No item found for title={title}")
 
 
 def main():
